@@ -1,0 +1,7 @@
+version.json
+config.json
+coverage.out
+faf.log
+faf
+.vscode/
+.DS_Store
