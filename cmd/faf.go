@@ -13,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/apex/log"
+	"os"
 	"securityonion-faf/config"
 	"securityonion-faf/framework"
 	"time"
@@ -35,8 +36,12 @@ func main() {
 	if err == nil {
 		//Start logging to a file if possible.
 		logFile, _ := framework.InitLogging(cfg.LogFilename, cfg.LogLevel)
-		defer logFile.Close()
-
+		defer func(logFile *os.File) {
+			err := logFile.Close()
+			if err != nil {
+				log.Fatal("Log file not closed properly!")
+			}
+		}(logFile)
 		log.WithFields(log.Fields{
 			"version":   cfg.Version,
 			"buildTime": cfg.BuildTime,

@@ -17,17 +17,34 @@ import (
 
 func TestJson(tester *testing.T) {
 	testFile := "/tmp/faf_test.go.json"
-	defer os.Remove(testFile)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			tester.Errorf("Unexpected error while removing the test file.")
+		}
+	}(testFile)
 	obj := make(map[string]string)
 	obj["MyKey"] = "MyValue"
 	err := WriteJsonFile(testFile, obj)
 	if err != nil {
-		tester.Errorf("unexpected write error")
+		tester.Errorf("Unexpected write error")
+	}
+	errr := WriteJsonFile("test"+testFile, obj)
+	if errr == nil {
+		tester.Errorf("Expected write error")
 	}
 	obj = make(map[string]string)
 	err = LoadJsonFile(testFile, &obj)
 	if err != nil {
 		tester.Errorf("unexpected load error")
+	}
+	err = LoadJson([]byte("{\"test: \"test\"}"), &obj)
+	if err == nil {
+		tester.Errorf("Expected a load error")
+	}
+	err = LoadJson([]byte("{\"test\": false}"), &obj)
+	if err == nil {
+		tester.Errorf("Expected load error")
 	}
 	if obj["MyKey"] != "MyValue" {
 		tester.Errorf("expected value %s but got %s", "MyValue", obj["MyKey"])

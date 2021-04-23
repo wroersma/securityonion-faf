@@ -23,10 +23,10 @@ type RedisConfig struct {
 func (config *RedisConfig) Verify() error {
 	var err error
 	if err == nil && config.ServerUrl == "" {
-		log.Fatal("Redis.ServerUrl configuration value is required")
+		log.Error("Redis.ServerUrl configuration value is required")
 	}
 	if err == nil && config.ServerPort == "" {
-		log.Fatal("Redis.ServerPort configuration value is required")
+		log.Error("Redis.ServerPort configuration value is required")
 	}
 	return err
 }

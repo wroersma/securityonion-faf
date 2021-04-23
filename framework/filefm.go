@@ -25,8 +25,9 @@ import (
 )
 
 var (
-	zeekcom = "/nsm/zeek/extracted/complete/"
-	ctx     = context.Background()
+	zeekcom       = "/nsm/zeek/extracted/complete/"
+	ctx           = context.Background()
+	strelkaunproc = "/nsm/strelka/unprocessed/"
 )
 
 func InitLogging(logFilename string, logLevel string) (*os.File, error) {
@@ -47,7 +48,12 @@ func GetMD5Hash(filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
 	hash := md5.New()
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
@@ -62,8 +68,9 @@ func ProcessFileDir(cfg *config.Config) {
 		Password: cfg.Redis.ServerPassword,
 		DB:       0,
 	})
-	files, err := ioutil.ReadDir("/nsm/zeek/extracted/complete")
+	files, err := ioutil.ReadDir(zeekcom[:len(zeekcom)-1])
 	if err != nil {
+		log.Error("Failed reading directory " + zeekcom)
 	}
 	for _, f := range files {
 		var newfile string
@@ -74,20 +81,23 @@ func ProcessFileDir(cfg *config.Config) {
 		val, err := rdb.Get(ctx, newfile).Result()
 		if err != nil {
 			oldLocation := zeekcom + f.Name()
-			newLocation := "/nsm/strelka/unprocessed/" + f.Name()
+			newLocation := strelkaunproc + f.Name()
 			err := os.Rename(oldLocation, newLocation)
 			if err != nil {
 			}
 			err = rdb.Set(ctx, newfile, "md5hash", 0).Err()
 			// Print out error if detected
 			if err != nil {
-				log.Info("Failed getting message from redis")
+				log.Info("Failed getting message from redis.")
 			}
-			log.Info("Moved file " + f.Name() + " to be processed with md5hash: " + newfile)
+			log.Info("Moved file to be processed with md5hash: " + newfile + " with file name: " + f.Name())
 		} else {
 			// Remove this file
-			os.Remove(zeekcom + f.Name())
-			log.Info("Removing duplicate file: " + f.Name() + " with md5hash: " + newfile)
+			err := os.Remove(zeekcom + f.Name())
+			if err != nil {
+				log.Error("Failed removing duplicate  with md5hash: " + newfile + " with file name: " + f.Name())
+			}
+			log.Info("Removing duplicate  with md5hash: " + newfile + " with file name: " + f.Name())
 		}
 		if val == "" {
 		}
